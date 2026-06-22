@@ -8,7 +8,6 @@ import { formatTanggal } from '@/lib/utils'
 import Link from 'next/link'
 
 export default function PengaturanPage() {
-  const supabase = createClient()
   const [profile, setProfile] = useState<Profile | null>(null)
   const [kategoriList, setKategoriList] = useState<Kategori[]>([])
   const [namaKategori, setNamaKategori] = useState('')
@@ -20,6 +19,7 @@ export default function PengaturanPage() {
 
   const fetchData = useCallback(async () => {
     setLoading(true)
+    const supabase = createClient()
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) { setLoading(false); return }
 
@@ -31,13 +31,14 @@ export default function PengaturanPage() {
     if (prof) { setProfile(prof); setNama(prof.nama || '') }
     setKategoriList(Array.isArray(kategori) ? kategori : [])
     setLoading(false)
-  }, [supabase])
+  }, [])
 
   useEffect(() => { fetchData() }, [fetchData])
 
   async function handleSaveProfile(e: React.FormEvent) {
     e.preventDefault()
     setSavingProfile(true)
+    const supabase = createClient()
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) { setSavingProfile(false); return }
 
