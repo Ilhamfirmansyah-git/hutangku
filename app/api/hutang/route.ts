@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
 
@@ -37,6 +36,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Tanggal dan jumlah wajib diisi.' }, { status: 400 })
   }
 
+  // Ensure profile row exists (in case trigger didn't fire on first signup)
+  await supabase.from('profiles').upsert(
+    { id: session.user.id, email: session.user.email, nama: session.user.email?.split('@')[0] },
+    { onConflict: 'id', ignoreDuplicates: true }
+  )
+
   const { data: profile } = await supabase
     .from('profiles')
     .select('is_premium')
@@ -50,10 +55,10 @@ export async function POST(req: NextRequest) {
       .eq('user_id', session.user.id)
 
     const batasGratis = 5
-    const totalAkanDibuat = is_recurring ? (recurring_months || 1) : 1
-    if ((count || 0) + totalAkanDibuat > batasGratis) {
+    const totalAkanDibuat = is_recurring && recurring_months && recurring_months > 1 ? recurring_months : 1
+    if ((count ?? 0) + totalAkanDibuat > batasGratis) {
       return NextResponse.json(
-        { error: `Akun gratis hanya bisa memiliki ${batasGratis} hutang aktif. Upgrade ke Premium untuk unlimited.` },
+        { error: `Akun gratis hanya bisa memiliki ${batasGratis} hutang. Upgrade ke Premium untuk unlimited.` },
         { status: 403 }
       )
     }
